@@ -793,7 +793,6 @@ func (r *Impl) AddPermissionResourceToRole(ctx context.Context, role *Role, reso
 	q.UseCache()
 	q.Where(q.Column("role_id"), "=", "AND", 0, role.ID)
 	q.Where(q.Column("resource_id"), "in", "AND", 0, strings.Join(GetResourceIDs(resource), ","))
-
 	q.Where(q.Column("access"), "=", "AND", 0, CombineAccess(access...))
 	rows, _ := q.Run(ctx, nil)
 	if len(rows) > 0 {
@@ -810,7 +809,7 @@ func (r *Impl) AddPermissionResourceToRole(ctx context.Context, role *Role, reso
 		ResourceID:      resource.ID,
 		Access:          CombineAccess(access...),
 	}
-	_, err = table.Insert(ctx, nil, rrp)
+	_, err = table.Upsert(ctx, nil, rrp)
 	return err
 }
 
@@ -848,7 +847,7 @@ func (r *Impl) NewAccountUserRole(ctx context.Context, accountID string, roleID 
 		UserID:    userID,
 		RoleID:    roleID,
 	}
-	_, err = table.Insert(ctx, nil, *aur)
+	_, err = table.Upsert(ctx, nil, *aur)
 	if err != nil {
 		return nil, err
 	}
@@ -1014,10 +1013,7 @@ func (r *Impl) AccountUserHasRole(ctx context.Context, accountID, userID string,
 		return false, err
 	}
 
-	if len(userRoles) == 0 {
-		return false, nil
-	}
-	return true, nil
+	return len(userRoles) > 0, nil
 }
 
 func (r *Impl) AccountUserHasAllRoles(ctx context.Context, accountID, userID string, roles ...*Role) (bool, error) {

@@ -178,41 +178,43 @@ type RBAC interface {
 }
 
 func JoinResourceID(ids ...string) string {
+	replacer := strings.NewReplacer(
+		"/", ".",
+		"-", "_",
+	)
 	var output []string
 	for _, id := range ids {
-		id = strings.ReplaceAll(id, "/", ".")
-		id = strings.ReplaceAll(id, "-", "_")
+		id = replacer.Replace(id)
 		id = strings.TrimPrefix(id, ".")
 		id = strings.TrimSuffix(id, ".")
 		output = append(output, id)
 	}
 
 	return strings.Join(output, ".")
-
 }
+
 func URLToResourceID(path string) string {
-	path = strings.ToLower(path)
-	path = strings.ReplaceAll(path, "/", ".")
-	path = strings.ReplaceAll(path, "-", "_")
-	return path
+	replacer := strings.NewReplacer(
+		"/", ".",
+		"-", "_",
+	)
+	return replacer.Replace(strings.ToLower(path))
+}
+
+var methodToAccessCode = map[string]int{
+	http.MethodGet:    AccessRead,
+	http.MethodPost:   AccessWrite,
+	http.MethodDelete: AccessDelete,
+	http.MethodPatch:  AccessUpdate,
+	http.MethodPut:    AccessUpdate,
 }
 
 func HTTPMethodToAccessCode(methods ...string) int {
 	output := 0
 	for _, method := range methods {
-		tmp := 0
-		switch method {
-		case http.MethodGet:
-			tmp = AccessRead
-		case http.MethodPost:
-			tmp = AccessWrite
-		case http.MethodDelete:
-			tmp = AccessDelete
-		case http.MethodPatch, http.MethodPut:
-			tmp = AccessUpdate
-
+		if accessCode, exists := methodToAccessCode[method]; exists {
+			output |= accessCode
 		}
-		output |= tmp
 	}
 	return output
 }
@@ -235,18 +237,15 @@ func removeDuplicateRoles(intSlice []*Role) []*Role {
 	keys := make(map[string]bool)
 	var list []*Role
 
-	// If the key(values of the slice) is not equal
-	// to the already present value in new slice (list)
-	// then we append it. else we jump on another element.
 	for _, entry := range intSlice {
-		if _, value := keys[entry.ID]; !value {
+		if !keys[entry.ID] {
 			keys[entry.ID] = true
 			list = append(list, entry)
 		}
 	}
-	sort.Slice(list[:], func(i, j int) bool {
+
+	sort.Slice(list, func(i, j int) bool {
 		return list[i].Priority > list[j].Priority
 	})
-
 	return list
 }
