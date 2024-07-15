@@ -17,11 +17,12 @@ var EndpointVarIDs = map[string]string{}
 var endpointVarIDsRe = regexp.MustCompile(`{([^}]+)}`)
 
 type Endpoint struct {
-	Path        string
-	RoleAccess  map[string]*Access
-	QueryParams []string
-	Methods     []string
-	f           http.HandlerFunc
+	Name        string             `json:"name"`
+	Path        string             `rf:"required" json:"path"`
+	RoleAccess  map[string]*Access `rf:"required" json:"role_access"`
+	QueryParams []string           `json:"query_params"`
+	Methods     []string           `rf:"required" json:"methods"`
+	f           http.HandlerFunc   `rf:"required"`
 }
 type Access struct {
 	Role   *rbac.Role
@@ -94,6 +95,10 @@ func (e *Endpoint) Equal(r *http.Request) bool {
 func (e *Endpoint) SetFunc(f *http.HandlerFunc) bool {
 	e.f = *f
 	return false
+}
+
+func (e *Endpoint) Valid() error {
+	return rutil.CheckRequiredFields[Endpoint](*e)
 }
 
 func (e *Endpoint) AddToRoute(ctx context.Context, mux *http.ServeMux, NextSteps ...NextStep) error {

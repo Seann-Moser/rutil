@@ -6,6 +6,7 @@ import (
 	"github.com/gobeam/stringy"
 	"reflect"
 	"strings"
+	"unicode"
 )
 
 func Flag(name ...string) string {
@@ -23,7 +24,11 @@ func CheckRequiredFields[T any](i T) error {
 	var missingFieldNames []string
 	for j := 0; j < t.NumField(); j++ {
 		field := t.Field(j)
-		tag := field.Tag.Get("ru")
+		tag := field.Tag.Get("rf")
+		if isFirstLetterLowercase(field.Name) {
+			continue
+		}
+
 		if tag == "required" {
 			value := v.Field(j).Interface()
 			if isEmpty(value) {
@@ -54,4 +59,12 @@ func MapKeys[K comparable, V any](data map[K]V) []K {
 		keyList = append(keyList, k)
 	}
 	return keyList
+}
+
+func isFirstLetterLowercase(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	firstRune := []rune(s)[0]
+	return unicode.IsLower(firstRune)
 }

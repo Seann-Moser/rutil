@@ -1,6 +1,7 @@
 package epm
 
 import (
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -51,5 +52,56 @@ func TestGetRawPath(t *testing.T) {
 
 		assert.Equal(t, tt.expectedMap, output)
 		assert.Equal(t, tt.expectedPath, rawPath)
+	}
+}
+
+func TestEndpointValid(t *testing.T) {
+	tests := []struct {
+		input         Endpoint
+		expectedError error
+	}{
+		{
+			input: Endpoint{
+				Name: "ResourceEndpoint",
+				Path: "/api/v1/resource",
+				RoleAccess: map[string]*Access{"id": &Access{
+					Role:   nil,
+					Access: 0,
+				}},
+				QueryParams: nil,
+				Methods:     []string{http.MethodGet},
+			},
+			expectedError: nil,
+		},
+		{
+			input: Endpoint{
+				Path: "",
+				Name: "ResourceEndpoint",
+			},
+			expectedError: errors.New("missing required field(s): Path,RoleAccess,Methods"),
+		},
+		{
+			input: Endpoint{
+				Path: "/api/v1/resource",
+				Name: "",
+			},
+			expectedError: errors.New("missing required field(s): RoleAccess,Methods"),
+		},
+		{
+			input: Endpoint{
+				Path: "",
+				Name: "",
+			},
+			expectedError: errors.New("missing required field(s): Path,RoleAccess,Methods"),
+		},
+	}
+
+	for _, tt := range tests {
+		err := tt.input.Valid()
+		if tt.expectedError == nil {
+			assert.NoError(t, err)
+		} else {
+			assert.EqualError(t, err, tt.expectedError.Error())
+		}
 	}
 }
