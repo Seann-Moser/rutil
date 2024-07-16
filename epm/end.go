@@ -24,6 +24,7 @@ type Endpoint struct {
 	Methods     []string           `rf:"required" json:"methods"`
 	f           http.HandlerFunc   `rf:"required"`
 }
+
 type Access struct {
 	Role   *rbac.Role
 	Access int
@@ -110,6 +111,7 @@ func (e *Endpoint) AddToRoute(ctx context.Context, mux *http.ServeMux, NextSteps
 		}
 
 	}
+
 	for _, next := range NextSteps {
 		err := next(ctx, e)
 		if err != nil {
